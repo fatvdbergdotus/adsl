@@ -1,0 +1,108 @@
+grammar org.AgriDSL with org.eclipse.xtext.common.Terminals
+
+generate agriDSL "http://www.AgriDSL.org"
+
+Model:
+	'Cyber-physical system specification'
+	'Section system' 'Top-level' systems+=aSystem+ 'default' defaultsysext+=DefaultSystemExtension
+	'Section part' parts+=Part* 'default' defaultpartext+=DefaultPartExtension
+	'Section feedback' loops+=FeedbackLoop*
+	'Section scenario' scen+=Scenario
+	'Section requirement' requirements+=Requirement* tsrequirements+=TimestampRequirement* requirementTraces+=RequirementTrace*
+	'Section measure' measure+=Measurement+ expspace+=ExperimentSpace
+	'Section design space' study+=DesignSpace
+	'Section configuration' config+=Configuration
+;
+
+aSystem: 'System' name=ID oSpace+=OperationSpace? '{' systemOrParts+=SystemOrPart+ '}' ext=SystemAndPartExtension;
+SystemOrPart: aSystem | SystemID | Part | PartID | DesAlternative;
+PartID:'AbstractPart' name=ID partID=ID;
+SystemID: 'AbstractSystem' name=ID systemID=ID ;
+Part: 'Part' name=ID oSpace+=OperationSpace? soa+=SensorOrActuator? ext=SystemAndPartExtension;
+
+DefaultSystemExtension: defsysext=SystemAndPartExtension;
+DefaultPartExtension: defparext=SystemAndPartExtension;
+SystemAndPartExtension: {SystemAndPartExtension}
+	fail += SystemAndPartExtensionToFailure?
+	rep  += SystemAndPartExtensionToRepair?
+	pon  += SystemAndPartExtensionPowerOn?
+	poff += SystemAndPartExtensionPowerOff?
+	sdt  += SystemAndPartExtensionShutdownTime?
+	sut  += SystemAndPartExtensionStartupTime?
+	pts  += SystemAndPartExtensionPolicyTimeShutDown?
+	rate += SystemAndPartExtensionRate?
+	cost += SystemAndPartExtensionCost?
+	numu += SystemAndPartExtensionNumberOfUnits?
+	util += SystemAndPartExtensionUtilization?;
+
+SystemAndPartExtensionToFailure: 			'toFailure' toFail+=Distribution;
+SystemAndPartExtensionToRepair: 			'toRepair' toRepair+=Distribution;
+SystemAndPartExtensionPowerOn: 				'powerOn' powerOn+=AExp;
+SystemAndPartExtensionPowerOff: 			'powerOff' powerOff+=AExp;
+SystemAndPartExtensionShutdownTime: 		'shutdownTime' shutdownTime+=AExp;
+SystemAndPartExtensionStartupTime:  		'startupTime' startupTime+=AExp;
+SystemAndPartExtensionPolicyTimeShutDown:   'policyTimeShutdown' policyTimeShutdown+=AExp;
+SystemAndPartExtensionRate:   				'rate' rate+=AExp;
+SystemAndPartExtensionCost:   				'cost' cost+=AExp;
+SystemAndPartExtensionNumberOfUnits: 		'numberOfUnits' numunits+=AExp;
+SystemAndPartExtensionUtilization:			'utilizationScores' red=INT orange=INT green=INT blue=INT black=INT;
+
+Distribution: ConstantDistribution | GeneralDistribution | ExponentialDistribution;
+ConstantDistribution: 'constant' aexp=AExp;
+GeneralDistribution: 'general' probvals+=ProbabilityValue+;
+ExponentialDistribution: 'exponential' aexp=AExp;
+ProbabilityValue: '(' prob=AExp ',' value=AExp ')';
+
+FeedbackLoop: 'FeedbackLoop' name=ID 'Sensor' sensorID+=ID 'Actuator' actuatorID+=ID latency+=FeedbackLoopLatency? 
+			  scen+=ScenarioFeedbackLoop?;
+SensorOrActuator: Sensor | Actuator;
+Sensor: {Sensor} 'Sensor';
+Actuator: {Actuator} 'Actuator';
+FeedbackLoopLatency: 'latency' d+=Distribution;
+
+Scenario: sfbl+=ScenarioFeedbackLoop*;
+ScenarioFeedbackLoop: ('FeedbackLoop' name=ID timeOffset=AExp ',' timeInterval=AExp ',' '...' 'load' load=AExp);
+
+Requirement: rk+=ID 'Requirement' name=ID minReq+=RequirementMinimum? maxReq+=RequirementMaximum?;
+RequirementMinimum: 'minimum' opModeSpace+=OperationSpace;
+RequirementMaximum: 'maximum' opModeSpace+=OperationSpace;
+TimestampRequirement: '(' timestamp=INT req+=Requirement ')';
+RequirementTrace: '(' req1+=Requirement req2+=Requirement timestamp=INT ')';
+
+Measurement: MeasurementComputeOptimalDesigns | MeasurementRequirementElicitation | MeasurementSimulateToObtainVariousMeasures;
+MeasurementComputeOptimalDesigns: {MeasurementComputeOptimalDesigns} 'Measurement ComputeOptimalDesigns';
+MeasurementRequirementElicitation: 'Measurement RequirementElicitation' 
+	'simulation has' iterations=AExp 'iterations' runs=AExp 'runs,' 
+	'actors have distribution' is=AExp 'intersection' cj=AExp 'conjunction' cp=AExp 'compromise' co=AExp 'coerce,'
+	'requirements are selected using' en=AExp 'entropy' ja=AExp 'jaccard,'
+	'requirement owner is selected using' enOwner=AExp 'entropy' jaOwner=AExp 'jaccard';
+MeasurementSimulateToObtainVariousMeasures: 'Measurement ObtainVariousMeasures' runs=INT 'runs of length' length=INT;
+
+AExp: AExpVal | AExpEspace | AExpExpr | AExpDspace ; 	
+AExpVal: value = INT;
+AExpEspace: 'espace' '(' param+=ID ')' ;
+AExpExpr: '(' a1+=AExp op+=Op a2+=AExp ')' ;
+AExpDspace: 'dspace' '(' param+=ID ')' ;
+
+Op: OpPlus | OpMinus | OpMultiply | OpDivision;
+OpPlus: {OpPlus} '+';
+OpMinus: {OpMinus} '-';
+OpMultiply: {OpMultiply} '*';
+OpDivision: {OpDivision} '/';
+	
+ExperimentSpace: {ExperimentSpace} 'ExperimentSpace' '(' expDimension+=ExperimentDimension* ')';
+ExperimentDimension: experimentDimensionName+=ID '{' value+=INT+ '}';
+	
+OperationSpace: {OperationSpace} 'OperationSpace' '(' opModeDimension+=OperationDimension* ')';
+OperationDimension: OperationDimensionValue | OperationDimensionInterval;
+OperationDimensionValue:		opModeDimensionName+=ID '{' value+=ID+ '}';
+OperationDimensionInterval: 	opModeDimensionName+=ID '[' range+=Range ']';
+Range: begin=INT end=INT ;
+
+DesignSpace: 'DesignSpace' '(' dSpaceDimension+=DesignSpaceDimension+ ')' ;
+DesAlternative: 'DesAlt' '(' dsDimensionName+=ID ')' '{' ds+=DesValueSystemOrPartPair+ '}' ;
+DesValueSystemOrPartPair: '{' dsValue+=ID systemOrParts+=SystemOrPart '}'  ;
+DesignSpaceDimension: dsDimensionName+=ID '{' value+=ID+ '}' ;
+
+Configuration: {Configuration} kv+=ConfigKeyValue*;
+ConfigKeyValue:	'(' key=STRING value=STRING ')';
