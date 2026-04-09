@@ -1,0 +1,75 @@
+xx
+Cyber-physical system specification
+
+Section design space
+	DesignSpace (
+		trailor 	 { chiselPlow trailortiller chaserbin notrailor }
+		transmission { unsynchronized doubleClutch CVT }
+		engineFuel 	 { steam diesel gasoline electric }
+	)
+
+Section system
+	Top-level System TractorTrailorCombination
+	{
+		AbstractSystem Tractor tractor
+		DesAlt(trailor){
+			{ chiselPlow  			 AbstractAtomicSystem TrailorChiselPlow trailorChiselPlow } 		
+			{ trailortiller			 AbstractAtomicSystem TrailorTiller trailorTiller }
+			{ chaserbin				 AbstractAtomicSystem ChaserBin chaserBin }
+			{ notrailor				 AtomicSystem NoTrailor 
+						  			  	OperationSpace ( load [0 0] activity { none } ) }
+		}
+	}
+	
+	System tractor {
+		AbstractSystem Transmission trans
+		AbstractSystem Fuel fuel
+	}
+
+	System trans {
+		DesAlt ( transmission ){
+			{ unsynchronized AtomicSystem transUnsynchronized
+							 OperationSpace ( driverSkills { advanced moderate easy } continousOperation { no } gears [ 1 24 ] ) }
+			{ doubleClutch   AtomicSystem transDoubleClutch 
+							 OperationSpace ( driverSkills { moderate easy } gears [ 1 24 ] ) }
+			{ CVT 			 AtomicSystem transCVT
+							 OperationSpace ( driverSkills { easy } efficiency { frictionLoss } gears [ 1 1000 ] ) }		
+		} 
+	}
+	
+	System fuel {
+		DesAlt ( engineFuel ){
+			{ steam    AtomicSystem fuelSteam
+					   OperationSpace ( pollution [5 10] speed [0 30] ) }
+			{ diesel   AtomicSystem fuelDiesel 
+					   OperationSpace ( pollution [4 8] fuelConsumption [3 5] speed [0 40] price { medium high } ) }
+			{ gasoline AtomicSystem fuelGasoline 
+					   OperationSpace ( pollution [2 5] fuelConsumption [4 10] speed [0 50] price { medium high } ) }
+			{ electric AtomicSystem fuelElectric 
+					   OperationSpace ( pollution [0 4] fuelConsumption [8 12] speed [0 55] price { high } ) }
+		}
+	}
+
+Section atomic system
+	AtomicSystem trailorChiselPlow OperationSpace ( speed [0 25] agility { low veryLow } activity { plow } )
+	AtomicSystem trailorTiller     OperationSpace ( speed [0 25] agility { low veryLow } activity { till } )
+	AtomicSystem chaserBin		   OperationSpace ( speed [0 15] agility { veryLow } activity { harvest } )	 
+	
+Section requirement
+	Legal Requirement speedRange
+		minimum OperationSpace ( speed [5 15] )
+		maximum OperationSpace ( speed [0 45] )	
+	
+	Business Requirement fuelAndPurchaseCosts
+		minimum OperationSpace ( )
+		maximum OperationSpace ( fuelConsumption [0 20] price { medium } )
+	
+	Design Requirement easyToOperate
+		minimum OperationSpace ( )
+		maximum OperationSpace ( driverSkills {easy} )
+
+Section measure
+	Measurement ComputeOptimalDesigns
+			
+Section configuration
+	("generateblackandwhitegraphs" "yes")
