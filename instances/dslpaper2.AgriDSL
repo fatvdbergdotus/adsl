@@ -1,0 +1,84 @@
+Cyber-physical system specification
+
+Section system
+	Top-level System TractorTrailorCombination
+	{
+		AbstractSystem Tractor tractor
+		DesAlt(trailor){
+			{ chiselPlow  			 AbstractPart TrailorChiselPlow trailorChiselPlow } 		
+			{ trailortiller			 AbstractPart TrailorTiller trailorTiller }
+			{ chaserbin				 AbstractPart ChaserBin chaserBin }
+			{ notrailor				 Part NoTrailor 
+						  			  	OperationSpace ( load [0 0] activity { none } ) }
+		}
+	}
+	
+	System tractor {
+		AbstractSystem Transmission trans
+		AbstractSystem Fuel fuel
+	}
+
+	System trans {
+		DesAlt ( transmission ){
+			{ unsynchronized Part transUnsynchronized
+							 OperationSpace ( driverSkills { advanced moderate easy } continousOperation { no } gears [ 1 24 ] ) }
+			{ doubleClutch   Part transDoubleClutch 
+							 OperationSpace ( driverSkills { moderate easy } gears [ 1 24 ] ) }
+			{ CVT 			 Part transCVT
+							 OperationSpace ( driverSkills { easy } efficiency { frictionLoss } gears [ 1 1000 ] ) }
+		} 
+	}
+	
+	System fuel {
+		DesAlt ( engineFuel ){
+			{ steam    Part fuelSteam
+					   OperationSpace ( pollution [5 10] speed [0 30] ) }
+			{ diesel   Part fuelDiesel 
+					   OperationSpace ( pollution [4 8] fuelConsumption [3 5] speed [0 40] price { medium high } ) }
+			{ gasoline Part fuelGasoline 
+					   OperationSpace ( pollution [2 5] fuelConsumption [4 10] speed [0 50] price { medium high } ) }
+			{ electric Part fuelElectric 
+					   OperationSpace ( pollution [0 4] fuelConsumption [8 12] speed [0 55] price { high } ) }
+		}
+	}
+
+Section part
+	Part trailorChiselPlow OperationSpace ( speed [0 25] agility { low veryLow } activity { plow } )
+	Part trailorTiller     OperationSpace ( speed [0 25] agility { low veryLow } activity { till } )
+	Part chaserBin		   OperationSpace ( speed [0 15] agility { veryLow } activity { harvest } )
+	
+Section requirement
+
+Section measure
+	//Measurement ComputeOptimalDesigns
+	Measurement RequirementElicitation simulation has 12 iterations 10 runs,
+									   actors have distribution 
+									   		espace (actorIntersection) intersection
+									   		espace (actorConjunction) conjunction 
+									   		espace (actorCompromise) compromise 
+									   		espace (actorCoerce) coerce,
+									   requirements are selected using
+									   		espace (selectReq) entropy 
+									   		(2-espace(selectReq)) jaccard,
+									   requirement owner is selected using
+									   		espace (selectOwner) entropy
+									   		(2-espace (selectOwner)) jaccard
+	ExperimentSpace ( actorIntersection {0 1 2} actorConjunction {0 1 2} actorCompromise {0 1 2} actorCoerce {0 1 2}
+					  selectReq {0 1 2} selectOwner {0 1 2} numThreads{1 2 4 8} ) // 729 experiment instances
+
+Section design space
+	DesignSpace (
+		trailor 	 { chiselPlow trailortiller chaserbin notrailor }
+		transmission { unsynchronized doubleClutch CVT }
+		engineFuel 	 { steam diesel gasoline electric }
+	)
+			
+Section configuration
+	("generateblackandwhitegraphs" "yes")
+	("generateUMLsequencediagram" "no")
+	("generateRequirementEngineIndividualTraces" "no")
+	("generateRequirementEngineAllTraces" "yes")
+	//("generateRequirementEngineAllTraces" "no")
+	("generateRequirementEngineOverallLog" "yes")
+	("generateRequirementEngineIterationLog" "yes")
+	("generatemanyrequirements" "1")
